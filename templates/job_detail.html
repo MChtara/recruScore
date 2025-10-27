@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} - {{ job.company }} - JobMatch Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- En-tête de l'offre -->
+        <div class="job-card card mb-4">
+            <div class="job-card-header">
+                <div class="company-badge">{{ job.company }}</div>
+                <h1 class="h2 mb-0">{{ job.title }}</h1>
+            </div>
+            
+            <div class="card-body">
+                <div class="job-meta">
+                    <div class="job-meta-item">
+                        <i class="fas fa-map-marker-alt text-primary"></i>
+                        <span><strong>{{ job.location }}</strong></span>
+                    </div>
+                    
+                    {% if job.job_type %}
+                    <div class="job-meta-item">
+                        <i class="fas fa-clock text-success"></i>
+                        <span>{{ job.job_type }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if job.contrat %}
+                    <div class="job-meta-item">
+                        <i class="fas fa-file-contract text-info"></i>
+                        <span>{{ job.contrat }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="job-meta-item">
+                        <i class="fas fa-calendar-alt text-warning"></i>
+                        <span>Publié le {{ job.date }}</span>
+                    </div>
+                    
+                    <div class="job-meta-item">
+                        <i class="fas fa-globe text-secondary"></i>
+                        <span>Source: {{ job.source }}</span>
+                    </div>
+                </div>
+                
+                {% if job.salary and job.salary != 'nan' %}
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-euro-sign me-2"></i>
+                    <strong>Rémunération:</strong> {{ job.salary }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Score ATS automatique -->
+        {% if cv_uploaded and analyse %}
+        <div class="job-card card mb-4">
+            <div class="card-header bg-success text-white">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Votre Score de Compatibilité ATS
+                    <span class="badge bg-light text-success ms-2">Calculé automatiquement</span>
+                </h3>
+            </div>
+            <div class="card-body">
+                {{ rapport_html | safe }}
+            </div>
+        </div>
+        {% elif cv_uploaded %}
+        <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-center">
+                <div class="spinner-border text-primary me-3" role="status">
+                    <span class="visually-hidden">Calcul en cours...</span>
+                </div>
+                <div>
+                    <h6 class="mb-0">Calcul du score ATS en cours...</h6>
+                    <small>Analyse de compatibilité avec votre CV ({{ cv_filename }})</small>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning mb-4">
+            <h6><i class="fas fa-upload me-2"></i>Uploadez votre CV pour voir votre score de compatibilité</h6>
+            <p class="mb-2">Dès que vous uploadez votre CV, vous obtiendrez automatiquement:</p>
+            <ul class="mb-3">
+                <li>Un score de compatibilité personnalisé</li>
+                <li>L'analyse de vos compétences matchées</li>
+                <li>Des recommandations pour améliorer votre candidature</li>
+            </ul>
+            <button class="btn btn-success" onclick="goToUploadCV()">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                Uploader mon CV
+            </button>
+        </div>
+        {% endif %}
+
+        <!-- Description détaillée -->
+        <div class="job-card card mb-4">
+            <div class="card-header">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Description du poste
+                </h3>
+            </div>
+            <div class="card-body">
+                {% if job.description and job.description not in ['None', 'N/A', 'Non récupérée', 'nan', ''] and job.description|length > 10 %}
+                    <div class="job-description">
+                        {{ job.description | replace('\n', '<br>') | safe }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Aucune description détaillée disponible pour cette offre.</strong>
+                        <p class="mb-0 mt-2">
+                            Cette offre a été récupérée sans description complète.
+                            {% if job.job_url %}
+                            Veuillez consulter le lien de l'offre ci-dessous pour plus d'informations.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="d-flex gap-3 mb-4 flex-wrap">
+            {% if job.job_url %}
+            <a href="{{ job.job_url }}" target="_blank" class="btn btn-primary-custom btn-lg">
+                <i class="fas fa-paper-plane me-2"></i>
+                Postuler maintenant
+            </a>
+            {% endif %}
+
+            <button class="btn btn-outline-primary btn-lg" onclick="shareJob()">
+                <i class="fas fa-share-alt me-2"></i>
+                Partager
+            </button>
+
+            <button class="btn btn-outline-success btn-lg" onclick="saveJob()">
+                <i class="fas fa-bookmark me-2"></i>
+                Sauvegarder
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-lg-4">
+        <!-- Informations sur l'entreprise -->
+        <div class="job-card card mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-building me-2"></i>
+                    {{ job.company }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Informations sur l'entreprise</p>
+                
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                    <span>{{ job.location }}</span>
+                </div>
+                
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-globe text-secondary me-2"></i>
+                    <span>Via {{ job.source }}</span>
+                </div>
+                
+                <button class="btn btn-outline-primary w-100" onclick="searchCompanyJobs()">
+                    <i class="fas fa-search me-2"></i>
+                    Voir toutes les offres de {{ job.company }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Emplois similaires -->
+        <div class="job-card card mb-4">
+            <div class="card-header">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Emplois similaires
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-secondary" onclick="searchSimilarJobs('location')">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Autres offres à {{ job.location }}
+                    </button>
+                    
+                    {% if job.job_type %}
+                    <button class="btn btn-outline-secondary" onclick="searchSimilarJobs('job_type')">
+                        <i class="fas fa-clock me-2"></i>
+                        Autres postes {{ job.job_type }}
+                    </button>
+                    {% endif %}
+                    
+                    {% if job.contrat %}
+                    <button class="btn btn-outline-secondary" onclick="searchSimilarJobs('contract')">
+                        <i class="fas fa-file-contract me-2"></i>
+                        Autres contrats {{ job.contrat }}
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Retour à la recherche -->
+        <div class="mb-4">
+            <a href="{{ url_for('index') }}" class="btn btn-secondary btn-lg w-100">
+                <i class="fas fa-arrow-left me-2"></i>
+                Retour à la recherche
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Partager cette offre</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Copiez ce lien pour partager cette offre:</p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="shareLink" readonly>
+                    <button class="btn btn-outline-secondary" onclick="copyToClipboard()">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Partager sur les réseaux sociaux:</h6>
+                    <div class="d-flex gap-2">
+                        <a href="#" class="btn btn-outline-primary" onclick="shareOnLinkedIn()">
+                            <i class="fab fa-linkedin"></i> LinkedIn
+                        </a>
+                        <a href="#" class="btn btn-outline-info" onclick="shareOnTwitter()">
+                            <i class="fab fa-twitter"></i> Twitter
+                        </a>
+                        <a href="#" class="btn btn-outline-success" onclick="shareByEmail()">
+                            <i class="fas fa-envelope"></i> Email
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const jobData = {
+        title: {{ job.title | tojson }},
+        company: {{ job.company | tojson }},
+        location: {{ job.location | tojson }},
+        job_type: {{ job.job_type | tojson }},
+        contrat: {{ job.contrat | tojson }},
+        url: {{ job.job_url | tojson }}
+    };
+
+    function shareJob() {
+        document.getElementById('shareLink').value = window.location.href;
+        new bootstrap.Modal(document.getElementById('shareModal')).show();
+    }
+
+    function copyToClipboard() {
+        const input = document.getElementById('shareLink');
+        input.select();
+        document.execCommand('copy');
+        
+        // Notification de succès
+        const btn = event.target.closest('button');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+        }, 2000);
+    }
+
+    function shareOnLinkedIn() {
+        const url = encodeURIComponent(window.location.href);
+        const title = encodeURIComponent(`Offre d'emploi: ${jobData.title} chez ${jobData.company}`);
+        const linkedin_url = `https://www.linkedin.com/sharing/share-offsite/?url=${url}&title=${title}`;
+        window.open(linkedin_url, '_blank');
+    }
+
+    function shareOnTwitter() {
+        const url = encodeURIComponent(window.location.href);
+        const text = encodeURIComponent(`Découvrez cette offre d'emploi: ${jobData.title} chez ${jobData.company} à ${jobData.location}`);
+        const twitter_url = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+        window.open(twitter_url, '_blank');
+    }
+
+    function shareByEmail() {
+        const subject = encodeURIComponent(`Offre d'emploi: ${jobData.title}`);
+        const body = encodeURIComponent(`Bonjour,\n\nJe pense que cette offre d'emploi pourrait vous intéresser:\n\n${jobData.title} chez ${jobData.company}\nLocalisation: ${jobData.location}\n\nVoir l'offre: ${window.location.href}`);
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    }
+
+    function saveJob() {
+        // Simulation de sauvegarde
+        const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+        const jobId = {{ job_id }};
+        
+        if (!savedJobs.includes(jobId)) {
+            savedJobs.push(jobId);
+            localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
+            
+            // Notification
+            alert('Offre sauvegardée avec succès!');
+            event.target.innerHTML = '<i class="fas fa-bookmark-check me-2"></i>Sauvegardée';
+            event.target.classList.remove('btn-outline-success');
+            event.target.classList.add('btn-success');
+        } else {
+            alert('Cette offre est déjà sauvegardée.');
+        }
+    }
+
+    function searchCompanyJobs() {
+        const company = encodeURIComponent(jobData.company);
+        window.location.href = `/?company=${company}`;
+    }
+
+    function searchSimilarJobs(type) {
+        let param = '';
+        switch(type) {
+            case 'location':
+                param = `location=${encodeURIComponent(jobData.location)}`;
+                break;
+            case 'job_type':
+                param = `job_type=${encodeURIComponent(jobData.job_type)}`;
+                break;
+            case 'contract':
+                param = `contract_type=${encodeURIComponent(jobData.contrat)}`;
+                break;
+        }
+        window.location.href = `/?${param}`;
+    }
+
+    function generateCoverLetter() {
+        alert('Fonctionnalité à venir: Génération automatique de lettre de motivation basée sur l\'IA!');
+    }
+
+    function setJobAlert() {
+        alert('Fonctionnalité à venir: Création d\'alertes email pour des offres similaires!');
+    }
+
+    function checkCompatibility() {
+        window.location.href = '{{ url_for("index") }}';
+    }
+
+    function goToUploadCV() {
+        window.location.href = '{{ url_for("my_cv") }}';
+    }
+
+    // Vérifier si l'offre est déjà sauvegardée au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
+        const jobId = {{ job_id }};
+
+        if (savedJobs.includes(jobId)) {
+            const saveBtn = document.querySelector('[onclick="saveJob()"]');
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-bookmark-check me-2"></i>Sauvegardée';
+                saveBtn.classList.remove('btn-outline-success');
+                saveBtn.classList.add('btn-success');
+            }
+        }
+    });
+</script>
+{% endblock %}

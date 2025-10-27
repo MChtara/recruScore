@@ -1,0 +1,625 @@
+{% extends "base.html" %}
+
+{% block title %}Statistiques - JobMatch Pro{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4 text-center mb-4">
+            <i class="fas fa-chart-line me-3"></i>
+            Tableau de bord statistiques
+        </h1>
+        <p class="lead text-center text-muted">
+            Analysez les tendances du marché de l'emploi avec nos données en temps réel
+        </p>
+    </div>
+</div>
+
+{% if stats %}
+<!-- Statistiques principales -->
+<div class="row mb-5">
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.total_jobs or 0 }}</div>
+            <div><i class="fas fa-briefcase me-2"></i>Offres totales</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.locations|length if stats.locations else 0 }}</div>
+            <div><i class="fas fa-map-marker-alt me-2"></i>Villes</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.companies|length if stats.companies else 0 }}</div>
+            <div><i class="fas fa-building me-2"></i>Entreprises</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stats-card">
+            <div class="stats-number">{{ stats.sources|length if stats.sources else 0 }}</div>
+            <div><i class="fas fa-globe me-2"></i>Sources</div>
+        </div>
+    </div>
+</div>
+
+{% if stats and stats.get('has_data', False) %}
+<!-- Graphiques et analyses -->
+<div class="row">
+    <!-- Top 10 Localisations -->
+    {% if stats.locations %}
+    <div class="col-lg-6 mb-4">
+        <div class="job-card card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Top 10 des localisations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="locationsChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for location, count in stats.locations.items() %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="fw-medium">{{ location }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top 10 Entreprises -->
+    {% if stats.companies %}
+    <div class="col-lg-6 mb-4">
+        <div class="job-card card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-building me-2"></i>
+                    Top 10 des entreprises
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="companiesChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for company, count in stats.companies.items() %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="fw-medium">{{ company[:30] }}{% if company|length > 30 %}...{% endif %}</span>
+                        <span class="badge bg-success rounded-pill">{{ count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Types d'emploi -->
+    {% if stats.job_types %}
+    <div class="col-lg-6 mb-4">
+        <div class="job-card card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    Répartition par type d'emploi
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="jobTypesChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for job_type, count in stats.job_types.items() %}
+                    {% if job_type and job_type != '' %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="fw-medium">{{ job_type }}</span>
+                        <div>
+                            <span class="badge bg-info rounded-pill">{{ count }}</span>
+                            <small class="text-muted ms-2">{{ "%.1f"|format((count / stats.total_jobs * 100)) }}%</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Sources -->
+    {% if stats.sources %}
+    <div class="col-lg-6 mb-4">
+        <div class="job-card card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-globe me-2"></i>
+                    Répartition par source
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 250px; width: 100%;">
+                    <canvas id="sourcesChart"></canvas>
+                </div>
+                <div class="mt-3">
+                    {% for source, count in stats.sources.items() %}
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <span class="fw-medium">{{ source }}</span>
+                        <div>
+                            <span class="badge bg-warning rounded-pill">{{ count }}</span>
+                            <small class="text-muted ms-2">{{ "%.1f"|format((count / stats.total_jobs * 100)) }}%</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Types de contrat -->
+    {% if stats.contract_types %}
+    <div class="col-lg-12 mb-4">
+        <div class="job-card card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-file-contract me-2"></i>
+                    Types de contrat
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="position: relative; height: 200px; width: 100%;">
+                    <canvas id="contractTypesChart"></canvas>
+                </div>
+                <div class="row mt-4">
+                    {% for contract, count in stats.contract_types.items() %}
+                    {% if contract and contract != '' %}
+                    <div class="col-md-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-center py-2 px-3 bg-light rounded">
+                            <span class="fw-medium small">{{ contract }}</span>
+                            <span class="badge bg-secondary rounded-pill">{{ count }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<!-- Message si pas de données pour les graphiques -->
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Graphiques en cours de chargement</h5>
+            <p>Les données sont en cours d'analyse. Les graphiques apparaîtront une fois le traitement terminé.</p>
+            <button class="btn btn-outline-warning" onclick="refreshStats()">
+                <i class="fas fa-refresh me-2"></i>
+                Actualiser
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Insights et recommandations -->
+<div class="row">
+    <div class="col-12">
+        <div class="job-card card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Insights et tendances
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-primary bg-opacity-10 rounded">
+                            <h6 class="text-primary"><i class="fas fa-trophy me-2"></i>Ville la plus dynamique</h6>
+                            <p class="mb-0 fw-bold">
+                                {% if stats.locations %}
+                                {{ stats.locations.keys() | list | first }}
+                                <small class="text-muted">({{ stats.locations.values() | list | first }} offres)</small>
+                                {% else %}
+                                Données en cours d'analyse
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-success bg-opacity-10 rounded">
+                            <h6 class="text-success"><i class="fas fa-building me-2"></i>Entreprise la plus active</h6>
+                            <p class="mb-0 fw-bold">
+                                {% if stats.companies %}
+                                {{ stats.companies.keys() | list | first }}
+                                <small class="text-muted">({{ stats.companies.values() | list | first }} offres)</small>
+                                {% else %}
+                                Données en cours d'analyse
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="p-3 bg-info bg-opacity-10 rounded">
+                            <h6 class="text-info"><i class="fas fa-clock me-2"></i>Type d'emploi dominant</h6>
+                            <p class="mb-0 fw-bold">
+                                {% if stats.job_types %}
+                                {{ stats.job_types.keys() | list | first }}
+                                <small class="text-muted">({{ "%.1f"|format((stats.job_types.values() | list | first / stats.total_jobs * 100)) }}%)</small>
+                                {% else %}
+                                Données en cours d'analyse
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6><i class="fas fa-chart-line me-2"></i>Recommandations</h6>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Pour les candidats:</strong> 
+                            {% if stats.locations %}
+                            Concentrez vos recherches sur {{ stats.locations.keys() | list | first }} qui représente le plus grand bassin d'emplois.
+                            {% else %}
+                            Consultez régulièrement les nouvelles offres pour identifier les opportunités.
+                            {% endif %}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Diversification:</strong> 
+                            {{ stats.sources|length if stats.sources else 'Plusieurs' }} sources différentes garantissent une couverture complète du marché.
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success me-2"></i>
+                            <strong>Opportunités:</strong> 
+                            {{ stats.companies|length if stats.companies else 'De nombreuses' }} entreprises actives offrent de multiples possibilités de carrière.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row mt-4">
+    <div class="col-12 text-center">
+        <h5 class="mb-3">Actions rapides</h5>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{{ url_for('index') }}" class="btn btn-primary-custom">
+                <i class="fas fa-search me-2"></i>
+                Rechercher des emplois
+            </a>
+            <button class="btn btn-outline-primary" onclick="exportStats()">
+                <i class="fas fa-download me-2"></i>
+                Exporter les statistiques
+            </button>
+            <button class="btn btn-outline-secondary" onclick="refreshStats()">
+                <i class="fas fa-refresh me-2"></i>
+                Actualiser les données
+            </button>
+            <button class="btn btn-outline-info" onclick="showTrends()">
+                <i class="fas fa-trending-up me-2"></i>
+                Voir les tendances
+            </button>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+    <h4>Aucune donnée disponible</h4>
+    <p class="text-muted">Les statistiques seront disponibles une fois les données chargées.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary-custom">
+        <i class="fas fa-arrow-left me-2"></i>
+        Retour à l'accueil
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+{% if stats and stats.get('has_data', True) %}
+<script>
+    // Configuration des couleurs
+    const colors = {
+        primary: '#667eea',
+        secondary: '#764ba2',
+        success: '#27ae60',
+        info: '#3498db',
+        warning: '#f39c12',
+        danger: '#e74c3c'
+    };
+
+    // Données pour les graphiques avec vérification
+    const statsData = {
+        locations: {{ stats.locations | tojson if stats.locations else '{}' }},
+        companies: {{ stats.companies | tojson if stats.companies else '{}' }},
+        jobTypes: {{ stats.job_types | tojson if stats.job_types else '{}' }},
+        sources: {{ stats.sources | tojson if stats.sources else '{}' }},
+        contractTypes: {{ stats.contract_types | tojson if stats.contract_types else '{}' }}
+    };
+
+    console.log('📊 Données stats reçues:', statsData);
+
+    // Configuration commune des graphiques (améliorée pour visibilité)
+    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.plugins.legend.position = 'bottom';
+    Chart.defaults.plugins.legend.labels.padding = 20;
+    Chart.defaults.plugins.legend.labels.usePointStyle = true;
+
+    // Fonction helper pour créer un graphique sécurisé avec meilleure visibilité
+    function createChartSafely(canvasId, config) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) {
+            console.warn(`Canvas ${canvasId} non trouvé`);
+            return null;
+        }
+        
+        try {
+            // Configuration de base pour tous les graphiques
+            config.options = config.options || {};
+            config.options.responsive = true;
+            config.options.maintainAspectRatio = true;
+            config.options.aspectRatio = 1.5;
+            
+            // Améliorer la visibilité des légendes
+            config.options.plugins = config.options.plugins || {};
+            config.options.plugins.legend = {
+                display: true,
+                position: 'right',
+                align: 'start',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    font: {
+                        size: 11
+                    }
+                }
+            };
+            
+            return new Chart(canvas.getContext('2d'), config);
+        } catch (error) {
+            console.error(`Erreur création graphique ${canvasId}:`, error);
+            return null;
+        }
+    }
+
+    // Graphique des localisations (amélioré)
+    if (Object.keys(statsData.locations).length > 0) {
+        createChartSafely('locationsChart', {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statsData.locations),
+                datasets: [{
+                    data: Object.values(statsData.locations),
+                    backgroundColor: [
+                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                        '#FF9F40', '#FF6384', '#C9CBCF', '#4BC0C0', '#FF6384'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique des entreprises (amélioré)
+    if (Object.keys(statsData.companies).length > 0) {
+        createChartSafely('companiesChart', {
+            type: 'bar',
+            data: {
+                labels: Object.keys(statsData.companies).map(company => 
+                    company.length > 20 ? company.substring(0, 20) + '...' : company
+                ),
+                datasets: [{
+                    label: 'Nombre d\'offres',
+                    data: Object.values(statsData.companies),
+                    backgroundColor: '#36A2EB',
+                    borderColor: '#36A2EB',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { 
+                        beginAtZero: true,
+                        ticks: { font: { size: 11 } }
+                    },
+                    y: {
+                        ticks: { font: { size: 10 } }
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique des types d'emploi (amélioré)
+    if (Object.keys(statsData.jobTypes).length > 0) {
+        const filteredJobTypes = {};
+        Object.keys(statsData.jobTypes).forEach(key => {
+            if (key && key.trim() !== '') {
+                filteredJobTypes[key] = statsData.jobTypes[key];
+            }
+        });
+
+        if (Object.keys(filteredJobTypes).length > 0) {
+            createChartSafely('jobTypesChart', {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(filteredJobTypes),
+                    datasets: [{
+                        data: Object.values(filteredJobTypes),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    // Graphique des sources (amélioré)
+    if (Object.keys(statsData.sources).length > 0) {
+        createChartSafely('sourcesChart', {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(statsData.sources),
+                datasets: [{
+                    data: Object.values(statsData.sources),
+                    backgroundColor: ['#FFCE56', '#36A2EB', '#4BC0C0', '#FF6384'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+
+    // Graphique des types de contrat (corrigé)
+    if (Object.keys(statsData.contractTypes).length > 0) {
+        const filteredContracts = {};
+        Object.keys(statsData.contractTypes).forEach(key => {
+            if (key && key.trim() !== '') {
+                filteredContracts[key] = statsData.contractTypes[key];
+            }
+        });
+
+        if (Object.keys(filteredContracts).length > 0) {
+            createChartSafely('contractTypesChart', {
+                type: 'horizontalBar', // Changé en horizontal pour éviter le chevauchement
+                data: {
+                    labels: Object.keys(filteredContracts).map(contract => 
+                        contract.length > 25 ? contract.substring(0, 25) + '...' : contract
+                    ),
+                    datasets: [{
+                        label: 'Nombre d\'offres',
+                        data: Object.values(filteredContracts),
+                        backgroundColor: '#9966FF',
+                        borderColor: '#9966FF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Forcer l'axe horizontal
+                    plugins: { 
+                        legend: { display: false }
+                    },
+                    scales: { 
+                        x: { 
+                            beginAtZero: true,
+                            ticks: { 
+                                font: { size: 11 }
+                            }
+                        },
+                        y: {
+                            ticks: { 
+                                font: { size: 10 },
+                                maxRotation: 0, // Pas de rotation
+                                minRotation: 0
+                            }
+                        }
+                    },
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 10,
+                            top: 10,
+                            bottom: 10
+                        }
+                    }
+                }
+            });
+        }
+    }
+</script>
+{% else %}
+<script>
+    console.log('ℹ️ Pas de données disponibles pour les graphiques');
+</script>
+{% endif %}
+
+<script>
+    // Fonctions utilitaires
+    function exportStats() {
+        const data = {
+            timestamp: new Date().toISOString(),
+            totalJobs: {{ stats.total_jobs or 0 }},
+            statistics: {{ stats | tojson if stats else '{}' }}
+        };
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `jobmatch_stats_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+    }
+
+    function refreshStats() {
+        window.location.reload();
+    }
+
+    function showTrends() {
+        alert('Fonctionnalité à venir: Analyse des tendances temporelles et prédictions basées sur l\'IA!');
+    }
+
+    // Animation des statistiques au chargement (SUPPRIMÉE - affichage direct)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Affichage direct des nombres sans animation
+        const statsNumbers = document.querySelectorAll('.stats-number');
+        statsNumbers.forEach(element => {
+            const finalValue = parseInt(element.textContent) || 0;
+            element.textContent = finalValue.toLocaleString();
+        });
+        
+        console.log('✅ Statistiques affichées directement');
+    });
+</script>
+{% endblock %}

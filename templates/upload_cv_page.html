@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Mon CV - JobMatch Pro{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h2 class="mb-4 text-center">
+            <i class="fas fa-file-upload me-2"></i>
+            Gérer mon CV
+        </h2>
+
+        {% if cv_uploaded %}
+        <!-- CV déjà uploadé -->
+        <div class="alert alert-success">
+            <h5><i class="fas fa-check-circle me-2"></i>Votre CV est déjà uploadé</h5>
+            <p class="mb-2"><strong>Fichier :</strong> {{ cv_filename }}</p>
+            <p class="mb-0"><small class="text-muted">Les scores de compatibilité s'affichent automatiquement sur toutes les offres d'emploi.</small></p>
+        </div>
+
+        <div class="card job-card mb-4">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                <h4>CV actif : {{ cv_filename }}</h4>
+                <p class="text-muted mb-4">Votre CV est prêt pour l'analyse automatique</p>
+
+                <div class="d-grid gap-3 col-md-6 mx-auto">
+                    <a href="{{ url_for('verify_cv') }}" class="btn btn-warning btn-lg">
+                        <i class="fas fa-file-certificate me-2"></i>
+                        Vérification documentaire
+                    </a>
+                    <a href="{{ url_for('technical_tests') }}" class="btn btn-info btn-lg">
+                        <i class="fas fa-laptop-code me-2"></i>
+                        Tests techniques
+                    </a>
+                    <button class="btn btn-primary btn-lg" onclick="document.getElementById('changeCVSection').style.display='block'; this.style.display='none'">
+                        <i class="fas fa-sync me-2"></i>
+                        Changer de CV
+                    </button>
+                    <button class="btn btn-outline-danger btn-lg" onclick="removeCV()">
+                        <i class="fas fa-trash me-2"></i>
+                        Supprimer mon CV
+                    </button>
+                    <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Retour à la recherche
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section de changement (cachée par défaut) -->
+        <div id="changeCVSection" style="display: none;">
+        {% endif %}
+
+        {% if not cv_uploaded %}
+        <div class="alert alert-info">
+            <h5><i class="fas fa-lightbulb me-2"></i>Pourquoi uploader votre CV ?</h5>
+            <ul class="mb-0">
+                <li>📊 Score de compatibilité automatique pour chaque offre</li>
+                <li>🎯 Analyse intelligente de vos compétences</li>
+                <li>💡 Recommandations personnalisées</li>
+                <li>⚡ Gain de temps considérable</li>
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Formulaire d'upload -->
+        <div class="card job-card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-cloud-upload-alt me-2"></i>
+                    {% if cv_uploaded %}Uploader un nouveau CV{% else %}Uploader mon CV{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form id="uploadCVForm" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="cv_file_input" class="form-label">
+                            <i class="fas fa-file-upload me-2"></i>
+                            Sélectionnez votre CV
+                        </label>
+                        <input type="file"
+                               class="form-control form-control-lg"
+                               id="cv_file_input"
+                               name="cv_file"
+                               accept=".pdf,.doc,.docx,.txt"
+                               required>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Formats acceptés: PDF, DOC, DOCX, TXT (Max: 16 MB)
+                        </div>
+                    </div>
+
+                    <!-- Preview de fichier -->
+                    <div id="filePreviewSection" class="mb-3" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="file-icon me-3">
+                                        <i class="fas fa-file fa-2x text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 id="fileNameDisplay" class="mb-1"></h6>
+                                        <small id="fileSizeDisplay" class="text-muted"></small>
+                                    </div>
+                                    <div class="text-success">
+                                        <i class="fas fa-check-circle fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="uploadErrorMsg" class="alert alert-danger" style="display: none;"></div>
+                    <div id="uploadSuccessMsg" class="alert alert-success" style="display: none;"></div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn" disabled>
+                            <i class="fas fa-upload me-2"></i>
+                            <span id="submitBtnText">Uploader</span>
+                            <div class="spinner-border spinner-border-sm ms-2" role="status" id="submitSpinner" style="display: none;">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                        </button>
+                        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Retour à la recherche
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if cv_uploaded %}
+        </div> <!-- Fin changeCVSection -->
+        {% endif %}
+
+        <!-- Informations supplémentaires -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="text-center p-3">
+                    <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                    <h6>Sécurisé</h6>
+                    <small class="text-muted">Vos données sont protégées et supprimées après analyse</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center p-3">
+                    <i class="fas fa-bolt fa-3x text-warning mb-3"></i>
+                    <h6>Rapide</h6>
+                    <small class="text-muted">Analyse complète en moins de 30 secondes</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center p-3">
+                    <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                    <h6>Précis</h6>
+                    <small class="text-muted">Powered by IA Groq pour des résultats fiables</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Gestion du fichier input
+    document.getElementById('cv_file_input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('fileNameDisplay').textContent = file.name;
+            document.getElementById('fileSizeDisplay').textContent = formatFileSize(file.size);
+            document.getElementById('filePreviewSection').style.display = 'block';
+
+            const icon = document.querySelector('#filePreviewSection .file-icon i');
+            const extension = file.name.split('.').pop().toLowerCase();
+
+            switch(extension) {
+                case 'pdf':
+                    icon.className = 'fas fa-file-pdf fa-2x text-danger';
+                    break;
+                case 'doc':
+                case 'docx':
+                    icon.className = 'fas fa-file-word fa-2x text-primary';
+                    break;
+                case 'txt':
+                    icon.className = 'fas fa-file-alt fa-2x text-secondary';
+                    break;
+                default:
+                    icon.className = 'fas fa-file fa-2x text-primary';
+            }
+
+            if (file.size > 16 * 1024 * 1024) {
+                showError('Le fichier est trop volumineux (max 16MB)');
+                e.target.value = '';
+                document.getElementById('filePreviewSection').style.display = 'none';
+                document.getElementById('submitBtn').disabled = true;
+            } else {
+                document.getElementById('uploadErrorMsg').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        } else {
+            document.getElementById('filePreviewSection').style.display = 'none';
+            document.getElementById('submitBtn').disabled = true;
+        }
+    });
+
+    // Soumission du formulaire
+    document.getElementById('uploadCVForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('cv_file_input');
+        const file = fileInput.files[0];
+
+        if (!file) {
+            showError('Veuillez sélectionner un fichier');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('cv_file', file);
+
+        // Afficher le spinner
+        document.getElementById('submitSpinner').style.display = 'inline-block';
+        document.getElementById('submitBtnText').textContent = 'Upload en cours...';
+        document.getElementById('submitBtn').disabled = true;
+
+        fetch('/upload-cv', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showSuccess('CV uploadé avec succès ! Redirection...');
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("index") }}';
+                }, 1500);
+            } else {
+                showError(data.error || 'Erreur lors de l\'upload');
+                document.getElementById('submitSpinner').style.display = 'none';
+                document.getElementById('submitBtnText').textContent = 'Uploader';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        })
+        .catch(error => {
+            showError('Erreur de connexion : ' + error);
+            document.getElementById('submitSpinner').style.display = 'none';
+            document.getElementById('submitBtnText').textContent = 'Uploader';
+            document.getElementById('submitBtn').disabled = false;
+        });
+    });
+
+    function removeCV() {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer votre CV ?')) {
+            return;
+        }
+
+        fetch('/remove-cv', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('CV supprimé avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur de connexion : ' + error);
+        });
+    }
+
+    function showError(message) {
+        const errorDiv = document.getElementById('uploadErrorMsg');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        document.getElementById('uploadSuccessMsg').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+        const successDiv = document.getElementById('uploadSuccessMsg');
+        successDiv.textContent = message;
+        successDiv.style.display = 'block';
+        document.getElementById('uploadErrorMsg').style.display = 'none';
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+</script>
+{% endblock %}

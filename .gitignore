@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+.claude/
+user_cvs/
+user_proofs/
+nul
+START_APP.bat
+updates.txt
+course_scraper/
+.env

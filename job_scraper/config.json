@@ -1,0 +1,35 @@
+{
+  "scrapers": {
+    "google_jobs": {
+      "enabled": false,
+      "api_key": "680b5540fbb24d6b6ff694b8",
+      "queries": [
+        "informatique"
+      ],
+      "max_results": 200,
+      "country": "tn",
+      "language": "fr"
+    },
+    "linkedin": {
+      "enabled": true,
+      "keywords": [
+        "ingenieur "
+      ],
+      "location": "Tunisia",
+      "pages": 1,
+      "get_descriptions": false
+    },
+    "france_travail": {
+      "enabled": true,
+      "client_id": "PAR_scraperemploiaziz_14497dbf72629cf4304f3f8d3635c367dd96674dced592fd8ab5345539059252",
+      "client_secret": "9819e72518856c24f218b19e9ffa464c4eff192ffb6870f2726c5e4a333782c5",
+      "days": 2
+    },
+    "tunisie_travail": {
+      "enabled": true,
+      "ville": "tunis",
+      "secteur": "informatique",
+      "max_pages": 1
+    }
+  }
+}

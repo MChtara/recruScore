@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Résultats d'analyse - {{ job.title }} - JobMatch Pro{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- En-tête -->
+        <div class="text-center mb-4">
+            <h1 class="display-5">
+                <i class="fas fa-brain me-3"></i>
+                Analyse ATS Complète
+            </h1>
+            <p class="lead">Votre compatibilité avec cette offre d'emploi</p>
+        </div>
+
+        <!-- Informations de l'offre -->
+        <div class="job-card card mb-4">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-1">{{ job.title }}</h4>
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-building me-2"></i>{{ job.company }}
+                            <span class="mx-2">•</span>
+                            <i class="fas fa-map-marker-alt me-2"></i>{{ job.location }}
+                        </p>
+                        <div class="job-meta">
+                            {% if job.job_type %}
+                            <span class="badge bg-primary me-2">{{ job.job_type }}</span>
+                            {% endif %}
+                            {% if job.contrat %}
+                            <span class="badge bg-info me-2">{{ job.contrat }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="stats-card p-3">
+                            <div class="h3 mb-0">{{ analyse.score_global }}%</div>
+                            <small>Score de compatibilité</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rapport d'analyse -->
+        <div class="job-card card mb-4">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Rapport d'analyse détaillé
+                </h4>
+            </div>
+            <div class="card-body">
+                {{ rapport_html | safe }}
+            </div>
+        </div>
+
+        <!-- Actions recommandées -->
+        <div class="job-card card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    Prochaines étapes recommandées
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-edit me-2 text-primary"></i>Optimiser votre CV</h6>
+                        <ul class="list-unstyled">
+                            {% for conseil in analyse.conseils_optimisation[:3] %}
+                            <li class="mb-2">
+                                <i class="fas fa-arrow-right text-primary me-2"></i>
+                                {{ conseil }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-trophy me-2 text-success"></i>Points à valoriser</h6>
+                        <ul class="list-unstyled">
+                            {% for point in analyse.points_forts[:3] %}
+                            <li class="mb-2">
+                                <i class="fas fa-star text-success me-2"></i>
+                                {{ point }}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Détails techniques (collapsible) -->
+        <div class="job-card card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <button class="btn btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#technicalDetails">
+                        <i class="fas fa-cogs me-2"></i>
+                        Détails techniques de l'analyse
+                        <i class="fas fa-chevron-down ms-2"></i>
+                    </button>
+                </h5>
+            </div>
+            <div class="collapse" id="technicalDetails">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Mots-clés ATS détectés</h6>
+                            <div class="mb-3">
+                                {% for mot in analyse.mots_cles_ats %}
+                                <span class="badge bg-success me-1 mb-1">{{ mot }}</span>
+                                {% endfor %}
+                            </div>
+                            
+                            <h6>Mots-clés manquants</h6>
+                            <div class="mb-3">
+                                {% for mot in analyse.mots_cles_manquants %}
+                                <span class="badge bg-warning me-1 mb-1">{{ mot }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Métriques d'analyse</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Score ATS:</strong> {{ analyse.score_ats }}%</li>
+                                <li><strong>Probabilité d'entretien:</strong> {{ analyse.probabilite_entretien }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="text-center">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                {% if job.job_url %}
+                <a href="{{ job.job_url }}" target="_blank" class="btn btn-success btn-lg">
+                    <i class="fas fa-paper-plane me-2"></i>
+                    Postuler maintenant
+                </a>
+                {% endif %}
+                
+                <button class="btn btn-primary btn-lg" onclick="downloadReport()">
+                    <i class="fas fa-download me-2"></i>
+                    Télécharger le rapport
+                </button>
+                
+                <button class="btn btn-outline-info btn-lg" onclick="shareResults()">
+                    <i class="fas fa-share-alt me-2"></i>
+                    Partager les résultats
+                </button>
+                
+                <a href="{{ url_for('analyze_cv', job_id=job_id) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-redo me-2"></i>
+                    Analyser un autre CV
+                </a>
+                
+                <a href="{{ url_for('job_detail', job_id=job_id) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Retour à l'offre
+                </a>
+            </div>
+        </div>
+
+        <!-- Suggestions d'amélioration -->
+        {% if analyse.score_global < 80 %}
+        <div class="alert alert-info mt-4">
+            <h6><i class="fas fa-lightbulb me-2"></i>💡 Conseil du coach carrière</h6>
+            <p class="mb-0">
+                {% if analyse.score_global < 50 %}
+                Votre CV nécessite quelques ajustements pour mieux correspondre à cette offre. 
+                Concentrez-vous sur l'ajout des compétences manquantes et l'optimisation des mots-clés ATS.
+                {% elif analyse.score_global < 70 %}
+                Bon potentiel ! Quelques améliorations ciblées pourraient significativement augmenter vos chances.
+                {% else %}
+                Vous êtes sur la bonne voie ! Peaufinez les détails pour atteindre l'excellence.
+                {% endif %}
+                
+                <a href="#" class="alert-link" onclick="showImprovementTips()">Voir nos conseils personnalisés →</a>
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal pour les conseils d'amélioration -->
+<div class="modal fade" id="improvementModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Conseils personnalisés d'amélioration
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="accordion" id="tipsAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#tip1">
+                                <i class="fas fa-keywords me-2"></i>Optimisation des mots-clés
+                            </button>
+                        </h2>
+                        <div id="tip1" class="accordion-collapse collapse show" data-bs-parent="#tipsAccordion">
+                            <div class="accordion-body">
+                                <h6>Mots-clés à ajouter :</h6>
+                                {% for mot in analyse.mots_cles_manquants[:5] %}
+                                <span class="badge bg-primary me-1">{{ mot }}</span>
+                                {% endfor %}
+                                <p class="mt-2">Intégrez ces termes naturellement dans votre CV, en particulier dans la section compétences et expérience professionnelle.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tip2">
+                                <i class="fas fa-tools me-2"></i>Compétences techniques
+                            </button>
+                        </h2>
+                        <div id="tip2" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
+                            <div class="accordion-body">
+                                <h6>Compétences à développer :</h6>
+                                <ul>
+                                    {% for comp in analyse.competences_manquantes[:3] %}
+                                    <li>{{ comp }}</li>
+                                    {% endfor %}
+                                </ul>
+                                <p>Considérez des formations courtes ou des projets personnels pour acquérir ces compétences.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tip3">
+                                <i class="fas fa-file-alt me-2"></i>Structure du CV
+                            </button>
+                        </h2>
+                        <div id="tip3" class="accordion-collapse collapse" data-bs-parent="#tipsAccordion">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li>Utilisez des verbes d'action au début de chaque point</li>
+                                    <li>Quantifiez vos réalisations avec des chiffres</li>
+                                    <li>Adaptez votre titre professionnel à l'offre</li>
+                                    <li>Placez les compétences clés en évidence</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Données de l'analyse pour JavaScript
+    const analyseData = {{ analyse | tojson }};
+    
+    function downloadReport() {
+        // Créer un rapport PDF ou JSON
+        const data = {
+            job: {
+                title: "{{ job.title }}",
+                company: "{{ job.company }}",
+                location: "{{ job.location }}"
+            },
+            analysis: analyseData,
+            generated_at: new Date().toISOString()
+        };
+        
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `analyse_cv_${analyseData.offre_info.entreprise.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        // Notification
+        showNotification('Rapport téléchargé avec succès!', 'success');
+    }
+    
+    function shareResults() {
+        const shareText = `🎯 Analyse ATS: ${analyseData.score_global}% de compatibilité avec le poste "${analyseData.offre_info.titre}" chez ${analyseData.offre_info.entreprise}`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'Résultats d\'analyse CV',
+                text: shareText,
+                url: window.location.href
+            });
+        } else {
+            // Fallback - copier dans le presse-papier
+            navigator.clipboard.writeText(shareText + '\n' + window.location.href).then(() => {
+                showNotification('Lien copié dans le presse-papier!', 'info');
+            });
+        }
+    }
+    
+    function showImprovementTips() {
+        new bootstrap.Modal(document.getElementById('improvementModal')).show();
+    }
+    
+    function showNotification(message, type) {
+        // Créer une notification toast
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div>${message}</div>
+                <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Supprimer automatiquement après 5 secondes
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+    
+    // Animation des scores au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animer les barres de progression
+        const progressBars = document.querySelectorAll('.progress-bar');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+                bar.style.transition = 'width 1s ease-in-out';
+            }, 500);
+        });
+        
+        // Animer le score principal
+        const scoreElement = document.querySelector('.stats-card .h3');
+        if (scoreElement) {
+            const finalScore = parseInt(scoreElement.textContent);
+            let currentScore = 0;
+            const increment = Math.ceil(finalScore / 30);
+            
+            const timer = setInterval(() => {
+                currentScore += increment;
+                if (currentScore >= finalScore) {
+                    currentScore = finalScore;
+                    clearInterval(timer);
+                }
+                scoreElement.textContent = currentScore + '%';
+            }, 50);
+        }
+        
+        // Effet de révélation des cartes
+        const cards = document.querySelectorAll('.job-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'all 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 200);
+        });
+    });
+    
+    // Smooth scroll pour les liens internes
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

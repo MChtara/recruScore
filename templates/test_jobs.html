@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Test - Liste des Offres{% endblock %}
+
+{% block content %}
+<h2>Test d'affichage des offres</h2>
+
+<div class="alert alert-info">
+    <strong>Statistiques :</strong>
+    <ul>
+        <li>Total d'offres trouvées : {{ stats.total_jobs }}</li>
+        <li>Page actuelle : {{ stats.current_page }}</li>
+        <li>Total de pages : {{ stats.total_pages }}</li>
+    </ul>
+</div>
+
+<h3>Liste des offres ({{ jobs|length }} affichées) :</h3>
+
+{% if jobs %}
+    {% for job in jobs %}
+    <div class="card mb-3">
+        <div class="card-body">
+            <h5 class="card-title">{{ loop.index }}. {{ job.title }}</h5>
+            <p class="card-text">
+                <strong>Entreprise:</strong> {{ job.company }}<br>
+                <strong>Localisation:</strong> {{ job.location }}<br>
+                <strong>Type:</strong> {{ job.job_type }}<br>
+                <strong>Date:</strong> {{ job.date }}
+            </p>
+            <a href="{{ url_for('job_detail', job_id=job.original_index) }}" class="btn btn-primary">Voir détails</a>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="alert alert-warning">
+        <strong>Aucune offre trouvée !</strong>
+        <p>Vérifiez le chargement des données.</p>
+    </div>
+{% endif %}
+
+{% endblock %}
