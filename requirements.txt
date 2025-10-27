@@ -1,0 +1,49 @@
+# Core Web Framework
+Flask==3.0.0
+Werkzeug==3.0.1
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.2
+
+# HTTP Requests
+requests==2.31.0
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# PDF Processing
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+
+# Word Document Processing
+python-docx==1.1.0
+
+# Image Processing
+Pillow==10.1.0
+
+# Web Scraping
+beautifulsoup4==4.12.2
+lxml==4.9.3
+selenium==4.16.0
+
+# HTML Parsing
+html5lib==1.1
+
+# Date/Time Utilities
+python-dateutil==2.8.2
+
+# JSON Schema Validation
+jsonschema==4.20.0
+
+# CSV Processing
+csv-parser==1.0.0
+
+# Optional: For production deployment
+# gunicorn==21.2.0
+# gevent==23.9.1
+
+# Optional: For development
+# flask-debugtoolbar==0.14.1
+# pytest==7.4.3
+# black==23.12.0
