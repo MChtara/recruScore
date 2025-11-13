@@ -80,30 +80,15 @@
                                     {% if langage.niveau_teste %}
                                     <small class="text-success"><i class="fas fa-check-circle me-1"></i>{{ langage.score_test }}%</small>
                                     {% else %}
-                                    <small class="text-muted"><i class="fas fa-question-circle me-1"></i>Non testé</small>
+                                    <span class="badge bg-secondary">{{ langage.niveau|default('Non spécifié') }}</span>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); showDifficultySelector('langages_programmation', {{ loop.index0 }})">
+                                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); generateTest('langages_programmation', {{ loop.index0 }})">
                                     <i class="fas fa-flask me-1"></i>Tester
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                    <!-- Sélecteur de difficulté (caché par défaut) -->
-                    <div class="difficulty-selector border-top p-3" id="difficulty_langages_programmation_{{ loop.index0 }}" style="display:none;">
-                        <h6 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Choisissez le niveau de difficulté :</h6>
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-success" onclick="generateTestWithDifficulty('langages_programmation', {{ loop.index0 }}, 'facile')">
-                                <i class="fas fa-smile me-1"></i>Facile
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" onclick="generateTestWithDifficulty('langages_programmation', {{ loop.index0 }}, 'moyen')">
-                                <i class="fas fa-meh me-1"></i>Moyen
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="generateTestWithDifficulty('langages_programmation', {{ loop.index0 }}, 'difficile')">
-                                <i class="fas fa-fire me-1"></i>Difficile
-                            </button>
                         </div>
                     </div>
                     <div class="test-container border-top p-3" id="test_langages_programmation_{{ loop.index0 }}" style="display:none;"></div>
@@ -149,30 +134,15 @@
                                     {% if db.niveau_teste %}
                                     <small class="text-success"><i class="fas fa-check-circle me-1"></i>{{ db.score_test }}%</small>
                                     {% else %}
-                                    <small class="text-muted"><i class="fas fa-question-circle me-1"></i>Non testé</small>
+                                    <span class="badge bg-secondary">{{ db.niveau|default('Non spécifié') }}</span>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); showDifficultySelector('bases_donnees', {{ loop.index0 }})">
+                                <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); generateTest('bases_donnees', {{ loop.index0 }})">
                                     <i class="fas fa-flask me-1"></i>Tester
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                    <!-- Sélecteur de difficulté -->
-                    <div class="difficulty-selector border-top p-3" id="difficulty_bases_donnees_{{ loop.index0 }}" style="display:none;">
-                        <h6 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Choisissez le niveau de difficulté :</h6>
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-success" onclick="generateTestWithDifficulty('bases_donnees', {{ loop.index0 }}, 'facile')">
-                                <i class="fas fa-smile me-1"></i>Facile
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" onclick="generateTestWithDifficulty('bases_donnees', {{ loop.index0 }}, 'moyen')">
-                                <i class="fas fa-meh me-1"></i>Moyen
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="generateTestWithDifficulty('bases_donnees', {{ loop.index0 }}, 'difficile')">
-                                <i class="fas fa-fire me-1"></i>Difficile
-                            </button>
                         </div>
                     </div>
                     <div class="test-container border-top p-3" id="test_bases_donnees_{{ loop.index0 }}" style="display:none;"></div>
@@ -218,29 +188,15 @@
                                     {% if framework.niveau_teste %}
                                     <small class="text-success"><i class="fas fa-check-circle me-1"></i>{{ framework.score_test }}%</small>
                                     {% else %}
-                                    <small class="text-muted"><i class="fas fa-question-circle me-1"></i>Non testé</small>
+                                    <span class="badge bg-secondary">{{ framework.niveau|default('Non spécifié') }}</span>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); showDifficultySelector('frameworks_bibliotheques', {{ loop.index0 }})">
+                                <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); generateTest('frameworks_bibliotheques', {{ loop.index0 }})">
                                     <i class="fas fa-flask me-1"></i>Tester
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="difficulty-selector border-top p-3" id="difficulty_frameworks_bibliotheques_{{ loop.index0 }}" style="display:none;">
-                        <h6 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Choisissez le niveau de difficulté :</h6>
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-success" onclick="generateTestWithDifficulty('frameworks_bibliotheques', {{ loop.index0 }}, 'facile')">
-                                <i class="fas fa-smile me-1"></i>Facile
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" onclick="generateTestWithDifficulty('frameworks_bibliotheques', {{ loop.index0 }}, 'moyen')">
-                                <i class="fas fa-meh me-1"></i>Moyen
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="generateTestWithDifficulty('frameworks_bibliotheques', {{ loop.index0 }}, 'difficile')">
-                                <i class="fas fa-fire me-1"></i>Difficile
-                            </button>
                         </div>
                     </div>
                     <div class="test-container border-top p-3" id="test_frameworks_bibliotheques_{{ loop.index0 }}" style="display:none;"></div>
@@ -286,29 +242,15 @@
                                     {% if domaine.niveau_teste %}
                                     <small class="text-success"><i class="fas fa-check-circle me-1"></i>{{ domaine.score_test }}%</small>
                                     {% else %}
-                                    <small class="text-muted"><i class="fas fa-question-circle me-1"></i>Non testé</small>
+                                    <span class="badge bg-secondary">{{ domaine.niveau|default('Non spécifié') }}</span>
                                     {% endif %}
                                 </div>
                             </div>
                             <div class="col-auto">
-                                <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); showDifficultySelector('domaines_expertise', {{ loop.index0 }})">
+                                <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); generateTest('domaines_expertise', {{ loop.index0 }})">
                                     <i class="fas fa-flask me-1"></i>Tester
                                 </button>
                             </div>
-                        </div>
-                    </div>
-                    <div class="difficulty-selector border-top p-3" id="difficulty_domaines_expertise_{{ loop.index0 }}" style="display:none;">
-                        <h6 class="mb-3"><i class="fas fa-sliders-h me-2"></i>Choisissez le niveau de difficulté :</h6>
-                        <div class="btn-group w-100" role="group">
-                            <button type="button" class="btn btn-outline-success" onclick="generateTestWithDifficulty('domaines_expertise', {{ loop.index0 }}, 'facile')">
-                                <i class="fas fa-smile me-1"></i>Facile
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" onclick="generateTestWithDifficulty('domaines_expertise', {{ loop.index0 }}, 'moyen')">
-                                <i class="fas fa-meh me-1"></i>Moyen
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="generateTestWithDifficulty('domaines_expertise', {{ loop.index0 }}, 'difficile')">
-                                <i class="fas fa-fire me-1"></i>Difficile
-                            </button>
                         </div>
                     </div>
                     <div class="test-container border-top p-3" id="test_domaines_expertise_{{ loop.index0 }}" style="display:none;"></div>
@@ -419,7 +361,11 @@
         button.disabled = true;
 
         fetch(`/generate-test/${category}/${skillIndex}`, {
-            method: 'POST'
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({})
         })
         .then(response => response.json())
         .then(data => {
@@ -482,20 +428,50 @@
                 <div class="card-header bg-light">
                     <h6 class="mb-0">
                         <i class="fas fa-tasks me-2"></i>${test.competence_testee}
-                        <span class="badge bg-info ms-2">${test.type_test}</span>
+                        <span class="badge bg-info ms-2">${test.type_test || 'Test technique'}</span>
                         <span class="badge bg-secondary ms-1">${test.niveau_difficulte}</span>
                         <span class="badge bg-warning text-dark ms-1">${test.duree_estimee} min</span>
                     </h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-3"><strong>Énoncé:</strong> ${test.enonce}</p>
+        `;
+
+        // Afficher le cours recommandé si disponible
+        if (test.cours_recommande) {
+            let cours = test.cours_recommande;
+            let difficultyBadge = {
+                'BEGINNER': 'success',
+                'INTERMEDIATE': 'primary',
+                'ADVANCED': 'warning',
+                'EXPERT': 'danger'
+            }[cours.difficulte.toUpperCase()] || 'secondary';
+
+            html += `
+                <div class="alert alert-info mb-3" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none;">
+                    <h6 class="mb-2"><i class="fas fa-graduation-cap me-2"></i>Ce quiz est basé sur le cours Coursera suivant :</h6>
+                    <p class="mb-2"><strong>${cours.titre}</strong></p>
+                    <p class="small mb-2">${cours.description}</p>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <span class="badge bg-light text-dark"><i class="fas fa-university me-1"></i>${cours.organisme}</span>
+                        <span class="badge bg-light text-dark"><i class="fas fa-signal me-1"></i>${cours.difficulte}</span>
+                        <span class="badge bg-light text-dark"><i class="fas fa-clock me-1"></i>${cours.duree}</span>
+                    </div>
+                    <a href="${cours.url}" target="_blank" class="btn btn-sm btn-light mt-2">
+                        <i class="fas fa-external-link-alt me-1"></i>Voir le cours complet
+                    </a>
+                </div>
+            `;
+        }
+
+        html += `
+                    <p class="mb-3"><strong>Énoncé:</strong> ${test.enonce || 'Répondez aux questions suivantes'}</p>
         `;
 
         // Afficher info
         html += `
             <div class="alert alert-info mb-4">
                 <i class="fas fa-info-circle me-2"></i>
-                <strong>Test QCM indépendant</strong> - ${test.questions ? test.questions.length : 0} questions. Score de réussite: 60%
+                <strong>Test QCM indépendant</strong> - ${test.questions ? test.questions.length : 0} questions. Score de réussite: 80%
             </div>
         `;
 

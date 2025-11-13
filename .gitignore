@@ -1,10 +1,74 @@
 # Python
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude Code
 .claude/
+
+# Environment Variables (SENSIBLE - Ne jamais committer)
+.env
+.env.local
+.env.production
+
+# Fichiers Utilisateur (Données personnelles)
 user_cvs/
 user_proofs/
+uploads/
+
+# Logs
+*.log
+tests_indisponibles.log
+tests_indisponibles_*.log
+
+# Fichiers temporaires Windows
 nul
-START_APP.bat
+Thumbs.db
+desktop.ini
+
+# Fichiers temporaires
 updates.txt
-course_scraper/
-.env
+*.tmp
+*.bak
+*.backup
+*~
+
+# Scripts Windows (optionnel - décommenter si non nécessaire en prod)
+# START_APP.bat
+
+# Base de données (IMPORTANT: Garder jobs.db et coursera_fast.db hors de Git si trop gros)
+# Décommenter ces lignes si les DBs sont trop volumineuses pour GitHub:
+# jobs.db
+# course_scraper/coursera_fast.db
+# course_scraper/chroma_db/
+
+# Fichiers de test
+check_db_courses.py
+test_scraper_topics.py
+course_scraper/test_chromadb_setup.py
+course_scraper/benchmark_chromadb.py
+
+# Documentation obsolète
+EXPLICATION_SCRAPING_GENERATION_TESTS.md
+cours_recommandation_semantic.py
+course_scraper/migrate_embeddings.py
+templates/job_detail.html.backup

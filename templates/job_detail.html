@@ -11,39 +11,39 @@
                 <div class="company-badge">{{ job.company }}</div>
                 <h1 class="h2 mb-0">{{ job.title }}</h1>
             </div>
-            
+
             <div class="card-body">
                 <div class="job-meta">
                     <div class="job-meta-item">
                         <i class="fas fa-map-marker-alt text-primary"></i>
                         <span><strong>{{ job.location }}</strong></span>
                     </div>
-                    
+
                     {% if job.job_type %}
                     <div class="job-meta-item">
                         <i class="fas fa-clock text-success"></i>
                         <span>{{ job.job_type }}</span>
                     </div>
                     {% endif %}
-                    
+
                     {% if job.contrat %}
                     <div class="job-meta-item">
                         <i class="fas fa-file-contract text-info"></i>
                         <span>{{ job.contrat }}</span>
                     </div>
                     {% endif %}
-                    
+
                     <div class="job-meta-item">
                         <i class="fas fa-calendar-alt text-warning"></i>
                         <span>Publié le {{ job.date }}</span>
                     </div>
-                    
+
                     <div class="job-meta-item">
                         <i class="fas fa-globe text-secondary"></i>
                         <span>Source: {{ job.source }}</span>
                     </div>
                 </div>
-                
+
                 {% if job.salary and job.salary != 'nan' %}
                 <div class="alert alert-info mt-3">
                     <i class="fas fa-euro-sign me-2"></i>
@@ -156,23 +156,53 @@
             </div>
             <div class="card-body">
                 <p class="text-muted mb-3">Informations sur l'entreprise</p>
-                
+
                 <div class="d-flex align-items-center mb-2">
                     <i class="fas fa-map-marker-alt text-primary me-2"></i>
                     <span>{{ job.location }}</span>
                 </div>
-                
+
                 <div class="d-flex align-items-center mb-3">
                     <i class="fas fa-globe text-secondary me-2"></i>
                     <span>Via {{ job.source }}</span>
                 </div>
-                
+
                 <button class="btn btn-outline-primary w-100" onclick="searchCompanyJobs()">
                     <i class="fas fa-search me-2"></i>
                     Voir toutes les offres de {{ job.company }}
                 </button>
             </div>
         </div>
+
+        <!-- Recommandations de formation -->
+        {% if cv_uploaded and analyse %}
+        <div class="job-card card mb-4">
+            <div class="card-header bg-warning text-white">
+                <h4 class="card-title mb-0">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Recommandations
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Obtenez des formations adaptées à vos besoins</p>
+                <button class="btn btn-warning w-100" onclick="showMissingSkillsRecommendations()" id="showRecommendationsBtn">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Voir les recommandations
+                </button>
+
+                <!-- Zone d'affichage des recommandations inline -->
+                <div id="recommendationsInline" style="display: none;" class="mt-4">
+                    <div id="recommendationsLoadingInline" class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm text-warning me-2" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <span>Chargement...</span>
+                    </div>
+                    <div id="recommendationsContentInline"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- Emplois similaires -->
         <div class="job-card card mb-4">
@@ -188,14 +218,14 @@
                         <i class="fas fa-map-marker-alt me-2"></i>
                         Autres offres à {{ job.location }}
                     </button>
-                    
+
                     {% if job.job_type %}
                     <button class="btn btn-outline-secondary" onclick="searchSimilarJobs('job_type')">
                         <i class="fas fa-clock me-2"></i>
                         Autres postes {{ job.job_type }}
                     </button>
                     {% endif %}
-                    
+
                     {% if job.contrat %}
                     <button class="btn btn-outline-secondary" onclick="searchSimilarJobs('contract')">
                         <i class="fas fa-file-contract me-2"></i>
@@ -216,6 +246,8 @@
     </div>
 </div>
 
+<!-- Modal supprimé - les recommandations s'affichent inline maintenant -->
+
 <!-- Modals -->
 <div class="modal fade" id="shareModal" tabindex="-1">
     <div class="modal-dialog">
@@ -232,7 +264,7 @@
                         <i class="fas fa-copy"></i>
                     </button>
                 </div>
-                
+
                 <div class="mt-3">
                     <h6>Partager sur les réseaux sociaux:</h6>
                     <div class="d-flex gap-2">
@@ -256,14 +288,14 @@
 
 {% block scripts %}
 <script>
-    const jobData = {
-        title: {{ job.title | tojson }},
-        company: {{ job.company | tojson }},
-        location: {{ job.location | tojson }},
-        job_type: {{ job.job_type | tojson }},
-        contrat: {{ job.contrat | tojson }},
-        url: {{ job.job_url | tojson }}
-    };
+    const jobData = {{ {
+        'title': job.title,
+        'company': job.company,
+        'location': job.location,
+        'job_type': job.job_type,
+        'contrat': job.contrat,
+        'url': job.job_url
+    } | tojson }};
 
     function shareJob() {
         document.getElementById('shareLink').value = window.location.href;
@@ -274,13 +306,13 @@
         const input = document.getElementById('shareLink');
         input.select();
         document.execCommand('copy');
-        
+
         // Notification de succès
         const btn = event.target.closest('button');
         const originalHTML = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-check"></i>';
         btn.classList.add('btn-success');
-        
+
         setTimeout(() => {
             btn.innerHTML = originalHTML;
             btn.classList.remove('btn-success');
@@ -311,11 +343,11 @@
         // Simulation de sauvegarde
         const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
         const jobId = {{ job_id }};
-        
+
         if (!savedJobs.includes(jobId)) {
             savedJobs.push(jobId);
             localStorage.setItem('savedJobs', JSON.stringify(savedJobs));
-            
+
             // Notification
             alert('Offre sauvegardée avec succès!');
             event.target.innerHTML = '<i class="fas fa-bookmark-check me-2"></i>Sauvegardée';
@@ -363,6 +395,156 @@
         window.location.href = '{{ url_for("my_cv") }}';
     }
 
+    function showMissingSkillsRecommendations() {
+        // Afficher inline (pas de modal)
+        const inlineContainer = document.getElementById('recommendationsInline');
+        const loadingInline = document.getElementById('recommendationsLoadingInline');
+        const contentInline = document.getElementById('recommendationsContentInline');
+        const button = document.getElementById('showRecommendationsBtn');
+
+        // Afficher la zone et le spinner
+        inlineContainer.style.display = 'block';
+        loadingInline.style.display = 'block';
+        contentInline.innerHTML = '';
+        contentInline.style.display = 'none';
+
+        // Désactiver le bouton
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement...';
+
+        // Récupérer les compétences manquantes depuis l'analyse ATS
+        {% if analyse and analyse.competences_manquantes %}
+        const missingSkills = {{ analyse.competences_manquantes | tojson }};
+        {% else %}
+        const missingSkills = [];
+        {% endif %}
+
+        // Si pas de compétences manquantes, afficher un message
+        if (!missingSkills || missingSkills.length === 0) {
+            loadingInline.style.display = 'none';
+            contentInline.innerHTML = `
+                <div class="alert alert-success alert-sm">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Parfait !</strong> Aucune formation nécessaire.
+                </div>
+            `;
+            contentInline.style.display = 'block';
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-graduation-cap me-2"></i>Voir les recommandations';
+            return;
+        }
+
+        // Appeler l'API pour obtenir les recommandations
+        fetch('/api/recommend-courses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                missing_skills: missingSkills,
+                job_id: {{ job_id }}
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            loadingInline.style.display = 'none';
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-graduation-cap me-2"></i>Masquer les recommandations';
+            button.onclick = function() {
+                inlineContainer.style.display = 'none';
+                button.innerHTML = '<i class="fas fa-graduation-cap me-2"></i>Voir les recommandations';
+                button.onclick = showMissingSkillsRecommendations;
+            };
+
+            if (data.success && data.recommendations && data.recommendations.length > 0) {
+                // DEBUG: Afficher dans la console le nombre de recommandations reçues
+                console.log(`[DEBUG] Total recommandations reçues: ${data.recommendations.length}`);
+                console.log('[DEBUG] Détail des recommandations:', data.recommendations);
+
+                // Grouper les cours par compétence
+                const coursesBySkill = {};
+                data.recommendations.forEach(course => {
+                    const skill = course.matched_skill;
+                    if (!coursesBySkill[skill]) {
+                        coursesBySkill[skill] = [];
+                    }
+                    coursesBySkill[skill].push(course);
+                });
+
+                // DEBUG: Afficher le nombre de cours par compétence
+                Object.keys(coursesBySkill).forEach(skill => {
+                    console.log(`[DEBUG] ${skill}: ${coursesBySkill[skill].length} cours`);
+                });
+
+                let html = '';
+
+                // Afficher TOUS les cours par compétence (pas de limitation)
+                Object.keys(coursesBySkill).forEach(skill => {
+                    const allCourses = coursesBySkill[skill]; // TOUS les cours, pas de slice
+                    console.log(`[DEBUG] Affichage pour ${skill}: ${allCourses.length} cours`);
+
+                    html += `
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-2">
+                                <i class="fas fa-chevron-right me-2"></i>${skill}
+                                <span class="badge bg-info ms-2">${allCourses.length} cours</span>
+                            </h6>
+                            <div class="list-group list-group-flush">
+                    `;
+
+                    allCourses.forEach((course, index) => {
+                        html += `
+                            <div class="list-group-item px-0 py-2">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">${index + 1}. ${course.title}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-university me-1"></i>${course.partner || 'Coursera'}
+                                            <span class="ms-2 badge badge-sm bg-secondary">${course.difficulty || 'N/A'}</span>
+                                            ${course.score_similarite ? `<span class="ms-1 badge badge-sm bg-success">${course.score_similarite}%</span>` : ''}
+                                        </small>
+                                    </div>
+                                    <a href="${course.url}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+
+                contentInline.innerHTML = html;
+            } else {
+                contentInline.innerHTML = `
+                    <div class="alert alert-warning alert-sm">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Aucun cours trouvé.
+                    </div>
+                `;
+            }
+
+            contentInline.style.display = 'block';
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            loadingInline.style.display = 'none';
+            contentInline.innerHTML = `
+                <div class="alert alert-danger alert-sm">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Erreur de chargement. Réessayez.
+                </div>
+            `;
+            contentInline.style.display = 'block';
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-graduation-cap me-2"></i>Voir les recommandations';
+        });
+    }
+
     // Vérifier si l'offre est déjà sauvegardée au chargement
     document.addEventListener('DOMContentLoaded', function() {
         const savedJobs = JSON.parse(localStorage.getItem('savedJobs') || '[]');
@@ -376,6 +558,8 @@
                 saveBtn.classList.add('btn-success');
             }
         }
+
+        // Plus besoin de gérer le modal - les recommandations sont inline
     });
 </script>
 {% endblock %}

@@ -46,6 +46,69 @@ if not ATS_API_KEY:
     raise ValueError("❌ ERREUR: ATS_API_KEY non trouvée dans .env. Veuillez créer un fichier .env avec votre clé API Groq.")
 ats_scorer = ATSScorer(ATS_API_KEY)
 
+# ==================== CHROMADB STATUS ====================
+chromadb_status = {
+    'initialized': False,
+    'embeddings_count': 0,
+    'total_courses': 0,
+    'migration_needed': False,
+    'migration_running': False,
+    'migration_progress': 0,
+    'last_check': None,
+    'error': None
+}
+
+def check_chromadb_status():
+    """Vérifier le statut de ChromaDB au démarrage"""
+    global chromadb_status
+    try:
+        # Vérifier que la base Coursera existe
+        coursera_db_path = os.path.join('course_scraper', 'coursera_fast.db')
+        if not os.path.exists(coursera_db_path):
+            chromadb_status['error'] = 'Base de données Coursera non trouvée'
+            return
+
+        # Compter les cours dans SQLite
+        import sqlite3
+        conn = sqlite3.connect(coursera_db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM courses")
+        total_courses = cursor.fetchone()[0]
+        conn.close()
+        chromadb_status['total_courses'] = total_courses
+
+        # Vérifier ChromaDB
+        try:
+            from course_scraper.course_embedding_store import CourseEmbeddingStore
+            chroma_path = os.path.join('course_scraper', 'chroma_db')
+            store = CourseEmbeddingStore(
+                db_path=coursera_db_path,
+                chroma_path=chroma_path
+            )
+            embeddings_count = store.get_count()
+            chromadb_status['embeddings_count'] = embeddings_count
+            chromadb_status['initialized'] = True
+            chromadb_status['migration_needed'] = (embeddings_count == 0 and total_courses > 0)
+            chromadb_status['last_check'] = datetime.now().isoformat()
+
+            if chromadb_status['migration_needed']:
+                print(f"\n⚠️  CHROMADB VIDE: {total_courses} cours disponibles mais 0 embeddings")
+                print(f"   Allez sur http://localhost:5000/admin/chromadb pour migrer\n")
+            else:
+                print(f"\n✅ CHROMADB PRÊT: {embeddings_count}/{total_courses} embeddings\n")
+
+        except ImportError:
+            chromadb_status['error'] = 'Module ChromaDB non installé'
+        except Exception as e:
+            chromadb_status['error'] = str(e)
+
+    except Exception as e:
+        chromadb_status['error'] = str(e)
+        print(f"[ERROR] Vérification ChromaDB échouée: {e}")
+
+# Vérifier ChromaDB au démarrage
+check_chromadb_status()
+
 # Initialiser le gestionnaire de scraping
 if SCRAPING_ENABLED:
     scraping_db = JobDatabase()
@@ -727,6 +790,109 @@ def api_search():
         'success': True
     })
 
+@app.route('/api/recommend-courses', methods=['POST'])
+def recommend_courses():
+    """API pour recommander des cours Coursera basés sur les compétences manquantes - OPTIMISÉ CHROMADB"""
+    try:
+        data = request.json
+        missing_skills = data.get('missing_skills', [])
+        job_id = data.get('job_id')
+
+        # DEBUG: Afficher les compétences manquantes reçues
+        print(f"\n[DEBUG API] Compétences manquantes reçues: {missing_skills}")
+        print(f"[DEBUG API] Nombre de compétences: {len(missing_skills)}")
+
+        if not missing_skills:
+            return jsonify({
+                'success': False,
+                'error': 'Aucune compétence manquante fournie'
+            }), 400
+
+        # Vérifier que la base de données Coursera existe
+        coursera_db_path = os.path.join('course_scraper', 'coursera_fast.db')
+        if not os.path.exists(coursera_db_path):
+            return jsonify({
+                'success': False,
+                'error': 'Base de données Coursera non disponible'
+            }), 404
+
+        recommendations = []
+
+        # NOUVEAU : Utiliser la fonction optimisée avec ChromaDB
+        # Pour chaque compétence manquante, récupérer TOUS les cours recommandés
+        for skill in missing_skills:  # TOUS les compétences (pas de limite)
+            try:
+                # Utiliser la fonction recommander_cours() qui utilise ChromaDB
+                # Récupérer exactement 3 cours par compétence
+                print(f"[DEBUG] Recherche de cours pour: {skill}")
+                cours_list = ats_scorer.recommander_cours(
+                    competence=skill,
+                    db_path=coursera_db_path,
+                    top_n=3,  # Top 3 cours par compétence comme demandé
+                    use_chromadb=True  # Force l'utilisation de ChromaDB
+                )
+                print(f"[DEBUG] {len(cours_list)} cours trouvés pour '{skill}'")
+
+                # Convertir le format pour l'API
+                for cours in cours_list:
+                    course = {
+                        'title': cours.get('titre', ''),
+                        'description': cours.get('description', ''),
+                        'partner': cours.get('organisme', 'Coursera'),
+                        'url': cours.get('url', ''),
+                        'difficulty': cours.get('difficulte', 'Non spécifié'),
+                        'duration': cours.get('duree', 'Non spécifié'),
+                        'language': 'en',  # Par défaut
+                        'matched_skill': skill,
+                        'score_similarite': cours.get('score_similarite', 0)
+                    }
+
+                    # NOUVEAU: Permettre les doublons entre compétences différentes
+                    # Un cours peut être pertinent pour plusieurs compétences
+                    # On ne vérifie les doublons QUE pour la même compétence
+                    same_skill_courses = [r for r in recommendations if r['matched_skill'] == skill]
+                    if not any(r['url'] == course['url'] for r in same_skill_courses):
+                        recommendations.append(course)
+                        print(f"  [DEBUG] Ajouté: {course['title'][:50]}... pour '{skill}'")
+
+            except Exception as e:
+                print(f"[ERROR] Erreur recommandation pour '{skill}': {e}")
+                # Continuer avec les autres compétences même en cas d'erreur
+                continue
+
+        # Pas de limite globale - on garde tous les cours (3 par compétence)
+        # Trier par score de similarité décroissant
+        recommendations.sort(key=lambda x: x.get('score_similarite', 0), reverse=True)
+
+        # DEBUG: Afficher le résumé
+        print(f"\n[DEBUG API] Résumé des recommandations:")
+        print(f"  - Total de compétences traitées: {len(missing_skills)}")
+        print(f"  - Total de cours recommandés: {len(recommendations)}")
+
+        # Compter par compétence
+        from collections import Counter
+        skills_count = Counter([r['matched_skill'] for r in recommendations])
+        for skill, count in skills_count.items():
+            print(f"  - {skill}: {count} cours")
+
+        return jsonify({
+            'success': True,
+            'recommendations': recommendations,
+            'missing_skills': missing_skills,
+            'total_skills': len(missing_skills),
+            'total_courses': len(recommendations),
+            'used_chromadb': True  # Indiquer qu'on utilise ChromaDB
+        })
+
+    except Exception as e:
+        import traceback
+        print(f"[ERROR] /api/recommend-courses: {e}")
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/job/<int:job_id>')
 def job_detail(job_id):
     """Page de détail d'une offre avec analyse automatique si CV disponible"""
@@ -1244,8 +1410,22 @@ def generate_test(category, skill_index):
         data = request.get_json() or {}
         difficulte = data.get('difficulte', 'moyen')
 
-        # Générer le test via LLM avec le niveau de difficulté choisi
-        test = ats_scorer.generer_test_technique(skill, category, difficulte)
+        # Extraire le nom de la compétence et son niveau
+        competence_nom = skill.get('nom', skill.get('name', ''))
+        niveau_cv = skill.get('niveau', '')  # Niveau déclaré dans le CV
+
+        # Récupérer le CV pour le contexte
+        cv_path = session.get('cv_path', '')
+        cv_text = ""
+        if cv_path and os.path.exists(cv_path):
+            cv_text = ats_scorer.extraire_texte_fichier(cv_path)
+
+        # Générer le quiz basé sur Coursera (SANS matrice de compétences)
+        test = ats_scorer.generer_quiz_coursera(
+            competence_nom,
+            niveau=niveau_cv,  # Niveau du CV
+            cv_text=cv_text    # Pour extraction automatique du contexte
+        )
 
         if 'erreur' in test:
             return jsonify({'success': False, 'error': test['erreur']}), 500
@@ -1403,8 +1583,8 @@ def evaluer_test(test: dict, reponses: dict) -> dict:
     niveau_reel = determiner_niveau_par_score(pourcentage)
 
     # Déterminer le statut
-    seuil_reussite = test.get('bareme', {}).get('seuil_reussite', 60)
-    seuil_excellent = test.get('bareme', {}).get('excellent', 85)
+    seuil_reussite = test.get('bareme', {}).get('seuil_reussite', 80)
+    seuil_excellent = test.get('bareme', {}).get('excellent', 90)
 
     if pourcentage >= seuil_excellent:
         statut = 'excellent'
@@ -1690,6 +1870,83 @@ def export_scraping_csv():
                     download_name=filename)
 
 # ==================== FIN DES ROUTES DE SCRAPING ====================
+
+# ==================== ROUTES D'ADMINISTRATION CHROMADB ====================
+
+@app.route('/admin/chromadb')
+def admin_chromadb():
+    """Page d'administration ChromaDB"""
+    return render_template('admin_chromadb.html', status=chromadb_status)
+
+@app.route('/api/chromadb/status')
+def get_chromadb_status():
+    """Obtenir le statut actuel de ChromaDB"""
+    return jsonify(chromadb_status)
+
+@app.route('/api/chromadb/migrate', methods=['POST'])
+def migrate_chromadb():
+    """Lancer la migration ChromaDB en arrière-plan"""
+    global chromadb_status
+
+    if chromadb_status['migration_running']:
+        return jsonify({
+            'success': False,
+            'error': 'Une migration est déjà en cours'
+        }), 400
+
+    def run_migration():
+        global chromadb_status
+        chromadb_status['migration_running'] = True
+        chromadb_status['migration_progress'] = 0
+
+        try:
+            from course_scraper.course_embedding_store import CourseEmbeddingStore
+
+            coursera_db_path = os.path.join('course_scraper', 'coursera_fast.db')
+            chroma_path = os.path.join('course_scraper', 'chroma_db')
+
+            store = CourseEmbeddingStore(
+                db_path=coursera_db_path,
+                chroma_path=chroma_path
+            )
+
+            # Charger le modèle
+            store.load_model()
+            chromadb_status['migration_progress'] = 5
+
+            # Lancer la synchronisation avec callback de progression
+            import sqlite3
+            conn = sqlite3.connect(coursera_db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM courses WHERE NOT EXISTS (SELECT 1 FROM courses c)")
+
+            # Sync depuis SQLite
+            added, failed = store.sync_from_sqlite(batch_size=100)
+
+            chromadb_status['embeddings_count'] = store.get_count()
+            chromadb_status['migration_progress'] = 100
+            chromadb_status['migration_needed'] = False
+            chromadb_status['last_check'] = datetime.now().isoformat()
+
+            print(f"\n✅ Migration ChromaDB terminée: {added} ajoutés, {failed} échecs\n")
+
+        except Exception as e:
+            chromadb_status['error'] = str(e)
+            print(f"\n❌ Erreur migration ChromaDB: {e}\n")
+        finally:
+            chromadb_status['migration_running'] = False
+
+    # Lancer en arrière-plan
+    thread = threading.Thread(target=run_migration)
+    thread.daemon = True
+    thread.start()
+
+    return jsonify({
+        'success': True,
+        'message': 'Migration démarrée en arrière-plan'
+    })
+
+# ==================== FIN DES ROUTES CHROMADB ====================
 
 if __name__ == '__main__':
     # Créer les dossiers nécessaires
